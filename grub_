@@ -1,0 +1,10 @@
+#!/bin/bash
+grub_() {
+    #_____________загрузка файлов загрузчика___ настройка __GRUB____________________
+arch-chroot /mnt /bin/bash -c "pacman -Syy grub grub-btrfs efibootmgr --noconfirm"
+Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --removable /dev/$DISK"
+arch-chroot /mnt /bin/bash -c "${Uefi}"
+arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
+}
+#---------------------------------------------------------------------
+
