@@ -5,100 +5,82 @@
 #  Входные данные диск с которым работать - $DISK
 #  формат (sda ... nvme0n1 ... без префикса /dev)
 #  На выходе назначенные партиции 
-#  $boot_part для  EFI System
+#  $boot_part для  EFI System      13.04.25 19:05
 #  $root_part для  ROOT
 #  эти переменные передаются дальше другим функциям в скриптах
 #-------------------------------------------------
+#!/bin/bash
+
 select_partitions() {
-    local target_disk="/dev/$1"  # Добавлен префикс /dev/
-    
-    # Проверка наличия диска в системе
+    local target_disk="/dev/$1"
+
+    # Проверка наличия диска
     if [[ ! -b "$target_disk" ]]; then
         echo "Ошибка: Устройство $target_disk не найдено!"
         exit 1
     fi
 
-    # Получаем информацию о разделах диска
+    # Получаем ТОЛЬКО разделы (исключаем сам диск)
     local partitions
-    
-    partitions=$(lsblk -pln -o NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT "$target_disk" | awk 'NR>1')
+    partitions=$(lsblk -pln -o NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT "$target_disk" | awk '$4 == "part" {print $0}')
 
-    # Проверка наличия разделов
     if [[ -z "$partitions" ]]; then
-        echo "На диске $target_disk не найдено разделов!"
+        echo "На диске $target_disk нет разделов!"
         exit 1
     fi
 
-    # Создаем массивы для хранения данных
+    # Списки для вывода
     local part_numbers=()
     local part_list=()
     local i=1
 
-    # Выводим заголовок
     echo "──────────────────────────────────────────────────────"
     echo "Диск: $target_disk"
     echo "Доступные разделы:"
-    
-    # Парсим информацию о разделах
+
+    # Парсим только разделы (part)
     while IFS= read -r line; do
         read -r name size fstype type mountpoint <<< "$line"
-        
-        # Сохраняем разделы в массив
         part_numbers+=("$name")
         part_list+=("$i) $name | Размер: $size | Тип: ${fstype:-не задан} | Монтирование: ${mountpoint:-нет}")
         ((i++))
     done <<< "$partitions"
 
-    # Выводим информацию о разделах
     printf "%s\n" "${part_list[@]}"
     echo "──────────────────────────────────────────────────────"
 
-    # Функция для выбора раздела
+    # Функция выбора
     choose_partition() {
         local prompt=$1
         while :; do
             read -p "$prompt (1-$((i-1)) или 'пропустить': " choice
-            # Обработка пропуска
             if [[ "$choice" == "пропустить" ]]; then
                 echo "skip"
                 return
             fi
-            
-            # Проверка корректности ввода
-            if [[ "$choice" =~ ^[0-9]+$ ]] && 
-               (( choice >= 1 && choice <= ${#part_numbers[@]} )); then
+            if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#part_numbers[@]} )); then
                 echo "${part_numbers[$((choice-1))]}"
                 return
             else
-                echo "Некорректный ввод! Повторите попытку."
+                echo "Некорректный ввод!"
             fi
         done
     }
 
-    # Выбор разделов
-    echo "Выберите разделы (введите номер):"
+    echo "Выберите разделы:"
     boot_part=$(choose_partition "  Раздел для /boot")
     root_part=$(choose_partition "  Раздел для /root")
-    
-    # Дополнительные разделы (пример для home)
-    # home_part=$(choose_partition "  Раздел для /home")
-    
-    # Проверка выбора корневого раздела
+
     if [[ "$root_part" == "skip" ]]; then
-        echo "Ошибка: Необходимо выбрать раздел для корневой файловой системы!"
+        echo "Ошибка: Выберите раздел для корневой системы (/root)!"
         exit 1
     fi
 }
 
-# Пример использования:
-# Выбираем диск (из предыдущего скрипта)
-# select_disk
-# DISK="sda" # Для теста (без /dev/)
+# Пример вызова:
+DISK="sda"
+select_partitions "$DISK"
 
-# select_partitions "$DISK" # формат вызова
-
-# Результаты выбора
-###echo "────────────────────────"
-###[[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
-###echo "Root раздел: $root_part"
-# [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
+echo "────────────────────────"
+[[ "$boot_part" != "skip" ]] && echo "Boot: $boot_part"
+echo "Root: $root_part"
