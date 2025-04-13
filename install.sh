@@ -8,7 +8,7 @@ source ./disk_partition.sh
 source ./select_partitions.sh
 
 # Выбираем диск
-select_disk
+select_disk "$DISK"
 
 # Шаг 2: Разметка
 disk_partition "$DISK"
