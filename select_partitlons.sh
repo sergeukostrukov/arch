@@ -3,13 +3,14 @@
 #--------------------------------------------------
 #  Функция для выбора разделов на указанном диске
 #  Входные данные диск с которым работать - $DISK
+#  формат (sda ... nvme0n1 ... без префикса /dev)
 #  На выходе назначенные партиции 
 #  $boot_part для  EFI System
 #  $root_part для  ROOT
 #  эти переменные передаются дальше другим функциям в скриптах
 #-------------------------------------------------
 select_partitions() {
-    local target_disk=$1
+    local target_disk="/dev/$1"  # Добавлен префикс /dev/
     
     # Проверка наличия диска в системе
     if [[ ! -b "$target_disk" ]]; then
@@ -92,12 +93,12 @@ select_partitions() {
 # Пример использования:
 # Выбираем диск (из предыдущего скрипта)
 # select_disk
-# DISK="/dev/sda" # Для теста
+# DISK="sda" # Для теста (без /dev/)
 
-select_partitions "$DISK"
+# select_partitions "$DISK" # формат вызова
 
 # Результаты выбора
-echo "────────────────────────"
-[[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
-echo "Root раздел: $root_part"
+###echo "────────────────────────"
+###[[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
+###echo "Root раздел: $root_part"
 # [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
