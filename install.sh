@@ -27,6 +27,9 @@ sel_met_part "$DISK"
 
 # Размечаем разделы
 select_partitions "$DISK"
+stop_
+nazn_part
+
 
 stop_ # Проверяем результат
 
