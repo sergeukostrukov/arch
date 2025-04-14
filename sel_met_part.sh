@@ -3,7 +3,7 @@
 ##---------Разметка диска выбор способа--------------------------------------
 sel_met_part(){
 PS3="Выбирете действие :"
-select choice in  "УНИВЕРСАЛЬНЫЙ" "AUTOMAT" "ERASE all and cfdisk SAMOST. " "NOT ERASE cfdisk WINDOWS!!!!! " "NOT ERASE NOT cfdisk" "EXIT"; do
+select choice in  "УНИВЕРСАЛЬНЫЙ (в режиме тестирования)" "По умолчанию 512М boot остальное root" "Полная очистка + Ручной режим" "Без очистки ручной режим cfdisk WINDOWS!!!!! " "NOT ERASE NOT cfdisk" "EXIT"; do
 case $REPLY in
     1) disk_partition;break;;
     2) fdisk_ || exit;break;;
