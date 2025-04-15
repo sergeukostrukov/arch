@@ -41,9 +41,9 @@ case $REPLY in
 esac
 done
 echo "     Проверка подключения к Enternet"
-pacman -Syy termius-font
-setfont ter-v32b
-#ping -c 10 8.8.8.8  || exit
+#pacman -Syy termius-font
+#setfont ter-v32b
+#ping -c 5 8.8.8.8  || exit
 #clear
 echo '
                  there is an Internet connection!!!!!!
