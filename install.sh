@@ -7,8 +7,8 @@ setfont ter-v32b
 region="Europe/Moscow"
 name="ArchLinux"
 mirror_="RU,NL"
-DISK="--"
-export DISK
+#DISK="--"
+export DISK="--"
 boot="--"
 root="--"
 #################################################################
@@ -18,7 +18,7 @@ root="--"
 # Подключаем функции из других скриптов
 
 
-suurce ./stop_ # заглушка остановить и осмотрерься
+source ./stop_.sh # заглушка остановить и осмотрерься
 
 source ./internet_connect.sh
 source ./select_disk.sh
@@ -28,26 +28,33 @@ source ./select_partitions.sh
 
 
 #_____ОСНОВНАЯ ПРОГРАММА________
-
+clear
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
 
 # подключаем интернет
+clear
 internet_connect
+clear
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
 # Выбираем диск
+clear
 select_disk
 
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
 # Шаг : Разметка
 # Выбор метода разметки РАЗМЕТКА
+clear
+lsblk -f /dev/$DISK
+fdisk -l /dev/$DISK
 sel_met_part "$DISK"
 
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
 
 # Размечаем разделы
+clear
 select_partitions "$DISK"
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
-
+clear
 nazn_part "$DISK"
 
 stop_ "$region" "$name" "$mirror_" "$DISK" "$boot" "$root"
