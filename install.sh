@@ -23,6 +23,7 @@ source ./stop_.sh # заглушка остановить и осмотрерь�
 source ./internet_connect.sh
 source ./select_disk.sh
 source ./disk_partition.sh
+source ./fdisk_.sh
 source ./sel_met_part.sh
 source ./select_partitions.sh
 
