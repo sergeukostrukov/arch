@@ -1,12 +1,14 @@
 #!/bin/bash
 clear
+setfont cyr-sun16
 echo '
 
-                             █████╗ ██████╗  ██████╗██╗  ██╗██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗
-                            ██╔══██╗██╔══██╗██╔════╝██║  ██║██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║
-                            ███████║██████╔╝██║     ███████║██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║                                    				██╔══██║██╔══██╗██║     ██╔══██║██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║
-                            ██║  ██║██║  ██║╚██████╗██║  ██║██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
-                            ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝
+                                     █████╗ ██████╗  ██████╗██╗  ██╗██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗
+                                    ██╔══██╗██╔══██╗██╔════╝██║  ██║██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║
+                                    ███████║██████╔╝██║     ███████║██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║
+                                    ██╔══██║██╔══██╗██║     ██╔══██║██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║
+                                    ██║  ██║██║  ██║╚██████╗██║  ██║██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗
+                                    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝
 
 
 
@@ -16,26 +18,25 @@ echo '
                                     #№  #№  #№  #№  #№  #№  #№  #№  #№  #№  #№  #№  ###№
 '
 sleep 2
-#clear
-#------------Localizaciya-------------------------------
-sed -i s/'#en_US.UTF-8'/'en_US.UTF-8'/g /etc/locale.gen
-sed -i s/'#ru_RU.UTF-8'/'ru_RU.UTF-8'/g /etc/locale.gen
-echo 'LANG=ru_RU.UTF-8' > /etc/locale.conf
-echo 'KEYMAP=ru' > /etc/vconsole.conf
-echo 'FONT=cyr-sun16' >> /etc/vconsole.conf
-setfont ter-132b
+clear
+stop_() {
+#---заглушка остановка для просмотра вывода комманд
+read -p "Press key to continue.. " -n1 -s
+}
+#---------------------------------------------------------------------
+
+
+setfont ter-v32b
 #setfont cyr-sun16
-locale-gen >/dev/null 2>&1; RETVAL=$?
-#################################################################
 #-----------Подключение к Enternet---------
 #--------fynction  "mywifi"----- WIFI conect-------------
 mywifi() {
 #clear
 iwctl device list
-read -p '                                          -> Введите определившееся значение, например "wlan0" : ' namelan
+read -p '                                    -> Введите определившееся значение, например "wlan0" : ' namelan
 iwctl station $namelan scan
 iwctl station $namelan get-networks
-read -p '                                           -> Введите название вашей сети из списка  : ' namewifi
+read -p '                                    -> Введите название вашей сети из списка  : ' namewifi
 iwctl station $namelan connect $namewifi
 iwctl station $namelan show
 sleep 5
@@ -62,7 +63,7 @@ case $REPLY in
 esac
 done
 echo "     Проверка подключения к Enternet"
-ping -c 10 8.8.8.8  || exit
+ping -c 3 8.8.8.8  || exit
 clear
 echo '
 
@@ -84,10 +85,12 @@ lsblk
 #fdisk -l
 echo '
             SPISOK disk   Посмотрите список подключенных дисковых устройств и
-    ВВЕДИТЕ ИМЯ ДИСКА ДЛЯ РАЗМЕТКИ wwod name disk "например: nvme0n1 sda sdb sdc ....vda ....:)"'
+    ВВЕДИТЕ ИМЯ ДИСКА ДЛЯ РАЗМЕТКИ wwod name disk 
+    "например: nvme0n1 sda sdb sdc ....vda ....:)"
+     '
 read -p "
 
-                                                              -> wwod name disk : " namedisk
+        -> wwod name disk : " namedisk
 
 
 echo '                Вы выьрали диск = '$namedisk
@@ -118,6 +121,9 @@ echo w;
 }
 ############################################################################
 #----------------Настройка пользователей-----------------------------------
+# В ДАЛЬНЕЙШЕМ ЗНАЧЕНИЕ ПЕРЕМЕННЫХ БУДЕТ ЗАГРУЖЕНО В СИСТЕМУ
+#
+passwd_() {
 clear
 echo '
 
@@ -151,6 +157,7 @@ while true; do
   [ "$userpassword" = "$userpassword2" ] && break
   echo "Please try again"
 done
+}
 #----------------------------------------------------
 ####################################################################
 #-------------- Функция вывода переменных на экран tablo2-----
@@ -191,7 +198,7 @@ tablo2
 
 PS3="Выберите действие :"
 echo
-select choice in "PRODOLZIT BEGIN" "Изменить IZMENIT регион, регион region miror репозитория, name имя компьютера " "Выйти из установки EXIT"; do
+select choice in "ПРОДОЛЩИТЬ" "Изменить- регион, miror репозитория, name имя компьютера " "Выйти из установки EXIT"; do
 case $REPLY in
     1) break;;
     2) peremen2;tablo2;;
@@ -204,7 +211,7 @@ clear
 #_______________Функция подготовки BOOT партиции
 mkboot() {
 PS3="1 Если выбрана партиция boot WINDOWS то не форматировать!!! 2 Если один линукс  :"
-select choice in "Не удаляйте NOT ERASE EFI- Windows!" "format mkfs.vfat BOOT" "Выйти из установки EXIT"; do
+select choice in "Если загрузчик ставится в EFI- Windows!" "Для загрузчика LINUX свой раздел mkfs.vfat BOOT" "Выйти из установки EXIT"; do
 case $REPLY in
     1) break;;
     2) mkfs.vfat -F32 /dev/$boot;break;;
@@ -311,8 +318,9 @@ clear
 echo '
 
 
-На диске должен быть тип GPT и создано минимум два раздела ->  boot  (512М если одно ядро) тип EFI System
-                                         и    root (остальное  пространство) тип  Linux filesystem
+На диске должен быть тип GPT и создано минимум два раздела
+ ->  boot  (512М если одно ядро) тип EFI System
+ ->  root (остальное  пространство) тип  Linux filesystem
 root пространство будет размечено в BTRFS и созданы subvolume необходимые для системы
 можно по своему усмотрению создать ещё разделы
 
@@ -320,7 +328,7 @@ root пространство будет размечено в BTRFS и созд
 ##---------------------Разметка диска--------------------------------------
 
 PS3="Выбирете действие :"
-select choice in "RECOMENDOWANNIE PARAMETRI AUTOMAT" "ERASE all and cfdisk SAMOST. " "NOT ERASE cfdisk WINDOWS!!!!! " "NOT ERASE NOT cfdisk" "EXIT"; do
+select choice in "512М-boot остальное-root все данный удаляются!!!" "Очистка диска, пересоздание разделов самостоятельно (РЕКОМЕНДОВАНО при умении)" "ничего не удаляется можно создать разделы на свобоюном месте cfdisk WINDOWS!!!!!" "ПРОПУСТИТЬ оставить как есть" "EXIT"; do
 case $REPLY in
     1) fdisk_ || exit;break;;
     2) wipefs --all /dev/$namedisk;cfdisk /dev/$namedisk || exit;break;;
@@ -380,8 +388,8 @@ done
 
 #--------------------выбор ядра linux---------------------------------------
 
-kernel1='pacstrap -i /mnt base base-devel linux-zen linux-zen-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw --noconfirm'
-kernel2='pacstrap -i /mnt base base-devel linux linux-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw --noconfirm'
+kernel1='pacstrap -i /mnt base base-devel linux-zen linux-zen-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw terminus-font --noconfirm'
+kernel2='pacstrap -i /mnt base base-devel linux linux-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw terminus-font --noconfirm'
 PS3="Выбирете действие :"
 select choice in "Linux-zen"  "Linux" "EXIT"; do
 case $REPLY in
@@ -406,6 +414,7 @@ sed -i s/'#ParallelDownloads = 5'/'ParallelDownloads = 10'/g /etc/pacman.conf
 sed -i s/'#VerbosePkgLists'/'VerbosePkgLists'/g /etc/pacman.conf
 sed -i s/'#Color'/'ILoveCandy'/g /etc/pacman.conf
 clear
+setfont cyr-sun16
 echo '
 ───────────────────────────────────────────────────────────────|
 ──────────────────────
@@ -422,10 +431,26 @@ echo '
 pacman -Syy archlinux-keyring --noconfirm
 pacman -Syy reflector --noconfirm
 #reflector --sort rate -l 20 --save /etc/pacman.d/mirrorlist
-#reflector --verbose -c 'Russia' -l 10 -p https --sort rate --save /etc/pacman.d/mirrorlist
-reflector --verbose -c $mirror_ -l 20 -p https --sort rate --save /etc/pacman.d/mirrorlist
+reflector --verbose -c 'Russia' -l 10 -p https --sort rate --save /etc/pacman.d/mirrorlist
+#reflector --verbose -c $mirror_ -l 20 -p https --sort rate --save /etc/pacman.d/mirrorlist
 pacman -Syy archlinux-keyring --noconfirm
-#---------------PACSTRAP-----------------------------------------------
+#--------------------------------------------------------------
+# диалог настройки пользователей 
+setfont ter-v32b
+passwd_
+setfont cyr-sun16
+
+#---------контроль получения значения переменных для пользователей
+clear
+setfont ter-v32b
+echo 'Пароль рута='$password
+echo 'пользователь='$username
+echo 'пароль пользователя='$userpassword
+stop_
+setfont cyr-sun16
+#-----------------------------------------------------------------
+
+# загрузка ядра линукс
 ${kernel}
 #------------------------------------------------------------------------
 genfstab -U /mnt >> /mnt/etc/fstab
@@ -437,7 +462,7 @@ arch-chroot /mnt /bin/bash -c "sed -i s/'#ru_RU.UTF-8'/'ru_RU.UTF-8'/g /etc/loca
 arch-chroot /mnt /bin/bash -c "locale-gen"
 arch-chroot /mnt /bin/bash -c "echo 'LANG=ru_RU.UTF-8' > /etc/locale.conf"
 arch-chroot /mnt /bin/bash -c "echo 'KEYMAP=ru' > /etc/vconsole.conf"
-arch-chroot /mnt /bin/bash -c "echo 'FONT=cyr-sun16' >> /etc/vconsole.conf"
+arch-chroot /mnt /bin/bash -c "echo 'FONT=ter-v32b' >> /etc/vconsole.conf"
 arch-chroot /mnt /bin/bash -c "echo $name > /etc/hostname"
 arch-chroot /mnt /bin/bash -c "echo '127.0.0.1 localhost' > /etc/hosts"
 arch-chroot /mnt /bin/bash -c "echo '::1       localhost' >> /etc/hosts"
@@ -457,7 +482,7 @@ arch-chroot /mnt /bin/bash -c "${Uefi}"
 arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
 
 #---заглушка остановка для просмотра вывода комманд
-read -p "Press key to continue.. " -n1 -s
+stop_
 #---------------------------------------------------------------------
 
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
@@ -465,6 +490,7 @@ arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
 ##############################################################################################
 #________________________ZRAM_________________________________________________
 clear
+setfont ter-v32b
 echo '
 
     Сейчас можно создать виртуальный диск в оперативной памяти и организовать на нем SWOP
@@ -476,7 +502,7 @@ echo '
 
 '
 PS3="Выберите действие :"
-select choice in "SWAP  ZRAM" " NO ZRAM go step"; do
+select choice in "Подключить своп в оперативной памяти SWAP  ZRAM" " ПРОПУСТИТЬ    go step"; do
 case $REPLY in
     1) zram_;break;;
     2) break;;

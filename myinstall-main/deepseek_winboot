@@ -1,0 +1,136 @@
+Установка Arch Linux рядом с Windows 11 в режиме UEFI требует аккуратности. Вот краткая инструкция:
+
+---
+
+### 1. **Подготовка места в Windows**
+- Откройте **Управление дисками** (Win + X → Управление дисками).
+- Сожмите раздел Windows, чтобы освободить место для Arch Linux (оставьте нераспределенное пространство).
+
+---
+
+### 2. **Создание загрузочной флешки**
+- Скачайте ISO Arch Linux: [https://archlinux.org/download/](https://archlinux.org/download/).
+- Запишите образ на USB-накопитель с помощью [Rufus](https://rufus.ie/) (в режиме **DD**) или [BalenaEtcher](https://www.balena.io/etcher/).
+
+---
+
+### 3. **Загрузка в Live-среду Arch**
+- Перезагрузите ПК, зайдите в BIOS/UEFI (обычно **Del/F2/F12**).
+- Отключите **Secure Boot** (если включен).
+- Выберите загрузку с USB-накопителя.
+
+---
+
+### 4. **Подключение к интернету**
+- Проверьте подключение:
+  ```bash
+  ping archlinux.org
+  ```
+- Для Wi-Fi используйте `iwctl`:
+  ```bash
+  iwctl
+  station wlan0 connect SSID
+  ```
+
+---
+
+### 5. **Разметка диска**
+- Определите диск с Windows (например, `/dev/nvme0n1`):
+  ```bash
+  fdisk -l
+  ```
+- Создайте разделы в нераспределенном пространстве (используйте `fdisk` или `gdisk`):
+  - **EFI-раздел** (если уже есть от Windows — не трогайте).
+  - **Корневой раздел** (например, 30 Гб для `/`).
+  - **Раздел подкачки** (опционально).
+  - **Домашний раздел** (оставшееся место для `/home`).
+
+Пример для `gdisk`:
+```bash
+gdisk /dev/nvme0n1
+# Создайте разделы с типами:
+# - Linux root (ext4): 8300
+# - Linux home: 8300
+# - Swap: 8200
+```
+
+---
+
+### 6. **Форматирование разделов**
+- Корневой и домашний разделы (ext4):
+  ```bash
+  mkfs.ext4 /dev/nvme0n1p5
+  mkfs.ext4 /dev/nvme0n1p6
+  ```
+- Swap (если есть):
+  ```bash
+  mkswap /dev/nvme0n1p7
+  swapon /dev/nvme0n1p7
+  ```
+
+---
+
+### 7. **Монтирование разделов**
+```bash
+mount /dev/nvme0n1p5 /mnt
+mkdir -p /mnt/home
+mount /dev/nvme0n1p6 /mnt/home
+mkdir -p /mnt/boot/efi
+mount /dev/nvme0n1p1 /mnt/boot/efi  # EFI-раздел Windows
+```
+
+---
+
+### 8. **Установка системы**
+```bash
+pacstrap /mnt base linux linux-firmware nano networkmanager grub efibootmgr
+```
+
+---
+
+### 9. **Настройка системы**
+- Сгенерируйте `fstab`:
+  ```bash
+  genfstab -U /mnt >> /mnt/etc/fstab
+  ```
+- Перейдите в chroot:
+  ```bash
+  arch-chroot /mnt
+  ```
+- Установите часовой пояс, локали, hostname:
+  ```bash
+  ln -sf /usr/share/zoneinfo/Region/City /etc/localtime
+  hwclock --systohc
+  nano /etc/locale.gen  # Раскомментируйте нужные локали (например, en_US.UTF-8)
+  locale-gen
+  echo "LANG=en_US.UTF-8" > /etc/locale.conf
+  echo "myhostname" > /etc/hostname
+  ```
+- Настройте загрузчик (GRUB):
+  ```bash
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+  grub-mkconfig -o /boot/grub/grub.cfg
+  ```
+  (Убедитесь, что в выводе `grub-mkconfig` есть запись Windows).
+
+---
+
+### 10. **Завершение**
+- Выйдите из chroot (`exit`), перезагрузитесь:
+  ```bash
+  umount -R /mnt
+  reboot
+  ```
+- После перезагрузки выберите Arch Linux или Windows в меню GRUB.
+
+---
+
+### Важно:
+- Не удаляйте EFI-раздел Windows!
+- Если GRUB не видит Windows, выполните в Arch:
+  ```bash
+  pacman -S os-prober
+  nano /etc/default/grub  # Раскомментируйте GRUB_DISABLE_OS_PROBER=false
+  grub-mkconfig -o /boot/grub/grub.cfg
+  ```
+- Резервные копии данных перед установкой обязательны!

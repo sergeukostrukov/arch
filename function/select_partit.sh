@@ -99,5 +99,4 @@ select_partitions "$DISK"
 # Результаты выбора
 echo "────────────────────────"
 [[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
-echo "Root раздел: $root_part"
-# [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
+echo "Root раздел: $root_part" [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
