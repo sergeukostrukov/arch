@@ -305,45 +305,67 @@ root пространство будет размечено в BTRFS и созд
 stop_
 ###########################################################################################
 ##---------------------Разметка диска--------------------------------------
+
 disk_part(){
-clear    
-lsblk -f /dev/$namedisk    
-    #- функция разметки дика скриптом по умолчанию---
-    fdisk_() {
-        wipefs --all /dev/$namedisk
-        (
-        echo g;
-        echo n;
-        echo ;
-        echo ;
-        echo +512M;
-        echo n;
-        echo ;
-        echo ;
-        echo ;
-        echo t;
-        echo 1;
-        echo 1;
-        echo t;
-        echo ;
-        echo 20;
-        echo w;
-        ) | fdisk /dev/$namedisk
+    while true; do  # Добавляем цикл while для обработки повторных входов без рекурсии
+        clear    
+        lsblk -f /dev/$namedisk
+        fdisk -l /dev/$namedisk
+        echo '---------------------------------'    
+        
+        fdisk_() {
+            wipefs --all /dev/$namedisk
+            (
+            echo g;
+            echo n;
+            echo ;
+            echo ;
+            echo +512M;
+            echo n;
+            echo ;
+            echo ;
+            echo ;
+            echo t;
+            echo 1;
+            echo 1;
+            echo t;
+            echo ;
+            echo 20;
+            echo w;
+            ) | fdisk /dev/$namedisk
         }
 
-PS3="Выбирете действие :"
-select choice in "512М-boot остальное-root все данный удаляются!!!" "Полное удаление всего на диске вместе с таблицей разделов!!!!!!!!!" "Ручная разметка. можно оставить разделы WINDOWS!!!!!" "ДАЛЬШЕ (Оставить с этими разделами) " "Завершить установку EXIT"; do
-case $REPLY in
-    1) fdisk_;disk_part;;
-    2) wipefs --all /dev/$namedisk;disk_part;;
-    3) cfdisk /dev/$namedisk;disk_part;;
-    4) echo "see you next time";break;;
-    5) exit;;
-    *) echo "Wrong choice!";;
-esac
-done
+        PS3="Выберите действие: "
+        select choice in "512М-boot остальное-root все данные удаляются" "Полное удаление всего на диске вместе с таблицей разделов" "Ручная разметка. Можно оставить разделы WINDOWS!!!!!" "ДАЛЬШЕ (Оставить с этими разделами)" "Завершить установку EXIT"; do
+            case $REPLY in
+                1) 
+                    fdisk_ || exit
+                    break  # Выходим из select и повторяем цикл while
+                    ;;
+                2) 
+                    wipefs --all /dev/$namedisk || exit
+                    break  # Выходим из select и повторяем цикл while
+                    ;;
+                3) 
+                    cfdisk /dev/$namedisk || exit
+                    break  # Выходим из select и повторяем цикл while
+                    ;;
+                4) 
+                    echo "see you next time"
+                    return 0  # Выходим из функции полностью
+                    ;;
+                5) 
+                    exit
+                    ;;
+                *) 
+                    echo "Неверный выбор!"
+                    ;;
+            esac
+        done
+    done
 }
-#__запуск функции разметки диска
+
+# Запуск функции разметки диска
 disk_part $namedisk
 ############################################################################################
 #-------------Диалог назначение партиций для boot root--------------------------------------
@@ -353,9 +375,9 @@ fdisk -l /dev/$namedisk
 echo '
         UKAZITE NAZBANIE PARTICII !!!<< '$namedisk '>>!!! boot end root'
 read -p "
-    POLNOE NAZBANIE PARTICII (sda1...nvme0n1p1....) boot: -> Введите значение : " boot
+POLNOE NAZBANIE PARTICII (sda1...nvme0n1p1....) boot: ->:" boot
 read -p "
-    POLNOE NAZBANIE PARTICII (sdb2...nvme0n1p2....) root: -> Введите значение : " root
+POLNOE NAZBANIE PARTICII (sdb2...nvme0n1p2....) root: ->:" root
 
 
 echo '                Вы выьрали Disk = '$namedisk
@@ -412,9 +434,6 @@ done
 Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --removable /dev/$namedisk"
 #Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB"
 
-bluez_='pacstrap -i /mnt bluez bluez-utils'
-dispmanager='pacstrap -i /mnt sddm --noconfirm'
-displaymanager='systemctl enable sddm --force'
 #------------------------Настройка Pacman--------------------------------|
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 sed -i s/'#ParallelDownloads = 5'/'ParallelDownloads = 10'/g /etc/pacman.conf
@@ -509,7 +528,7 @@ echo '
 
 '
 PS3="Выберите действие :"
-select choice in "Подключить своп в оперативной памяти SWAP  ZRAM" " ПРОПУСТИТЬ    go step"; do
+select choice in "Подключить  ZRAM" " ДАЛЬШЕ"; do
 case $REPLY in
     1) zram_;break;;
     2) break;;
