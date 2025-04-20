@@ -373,10 +373,14 @@ clear
 lsblk -f /dev/$namedisk
 fdisk -l /dev/$namedisk
 echo '
-        UKAZITE NAZBANIE PARTICII !!!<< '$namedisk '>>!!! boot end root'
+
+
+UKAZITE NAZBANIE PARTICII !!!<< '$namedisk '>>!!! boot end root'
 read -p "
+
 POLNOE NAZBANIE PARTICII (sda1...nvme0n1p1....) boot: ->:" boot
 read -p "
+
 POLNOE NAZBANIE PARTICII (sdb2...nvme0n1p2....) root: ->:" root
 
 
