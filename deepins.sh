@@ -21,13 +21,9 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 #------------Localizaciya-------------------------------
-sed -i s/'#en_US.UTF-8'/'en_US.UTF-8'/g /etc/locale.gen
-sed -i s/'#ru_RU.UTF-8'/'ru_RU.UTF-8'/g /etc/locale.gen
-echo 'LANG=ru_RU.UTF-8' > /etc/locale.conf
-echo 'KEYMAP=ru' > /etc/vconsole.conf
-echo 'FONT=cyr-sun16' >> /etc/vconsole.conf
-setfont cyr-sun16
-locale-gen >/dev/null 2>&1; RETVAL=$?
+
+setfont ter-v32b
+
 #################################################################
 #-----------Подключение к Enternet---------
 #--------fynction  "mywifi"----- WIFI conect-------------
