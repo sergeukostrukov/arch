@@ -2,6 +2,7 @@
 #==============================================================================================
 zagruzchik(){
 while true; do  # Добавляем цикл while для обработки повторных входов без рекурсии
+   clear
     grub_() {
     arch-chroot /mnt /bin/bash -c "mkinitcpio -P" # компиляция ядра для загрузчика
     #Установка пакетов загрузчика
@@ -24,8 +25,8 @@ while true; do  # Добавляем цикл while для обработки п
     #---заглушка остановка для просмотра вывода комманд
     stop_   
     }
-    PS3="searh WINDOWS :"
-    select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
+    PS3="> :"
+    select choice in "Установка GRUB"  "GRUB ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) grub_;break;;
         2) searhwin;break;;
@@ -37,4 +38,6 @@ while true; do  # Добавляем цикл while для обработки п
     done
 done
 }
+DISK="sda"
+zagruzchik $DISK
 #----------------end searh windows--------------------
