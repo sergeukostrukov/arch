@@ -73,3 +73,4 @@ mount -o ${sub1}=@log /dev/$root /mnt/var/log
 mount -o ${sub1}=@pkg /dev/$root /mnt/var/cache/pacman/pkg
 #==========================================================================
 arch-chroot /mnt
+
