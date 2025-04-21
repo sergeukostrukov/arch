@@ -503,7 +503,8 @@ echo "root:$password" | arch-chroot /mnt chpasswd
 arch-chroot /mnt /bin/bash -c "useradd -m -G wheel -s /bin/bash $username"
 echo "$username:$userpassword" | arch-chroot /mnt chpasswd
 arch-chroot /mnt /bin/bash -c "systemctl enable NetworkManager"
-#arch-chroot /mnt /bin/bash -c "mkinitcpio -P" # компиляция ядра для загрузчика
+#
+arch-chroot /mnt /bin/bash -c "mkinitcpio -P" # компиляция ядра для загрузчика
 
 ##############################################################################################
 #________________________ZRAM_________________________________________________
@@ -539,7 +540,7 @@ while true; do  # Добавляем цикл while для обработки п
     
     '
     grub_() {
-    arch-chroot /mnt /bin/bash -c "mkinitcpio -P" # компиляция ядра для загрузчика
+    #arch-chroot /mnt /bin/bash -c "mkinitcpio -P" # компиляция ядра для загрузчика
     #Установка пакетов загрузчика
     arch-chroot /mnt /bin/bash -c "pacman -Syy grub grub-btrfs efibootmgr --noconfirm"
     Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --removable /dev/$DISK"
@@ -790,7 +791,7 @@ PS3=" Выберите :"
         case $REPLY in
         1) zagruzchik;break;;                    # Выходим из select 
         2) install_refind_with_windows $boot;break;;   # Выходим из select 
-        3) install_refind;break;;
+        3) install_refind $boot;break;;
         4) arch-chroot /mnt;break;;         # Выходим из select 
         5) arch-chroot /mnt /bin/bash -c "exit";umount -R /mnt;reboot;break;;
         6) exit;; 
