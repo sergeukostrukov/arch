@@ -671,71 +671,102 @@ install_refind_with_windows() {
 
 #=================================================================================================
 #_______________________install_refind_______________________________________
+#!/bin/bash
+
 install_refind() {
-    # Проверка наличия смонтированного EFI раздела
-    local efi_mount_point="/mnt/boot/efi"
-    if ! mount | grep -q "$efi_mount_point"; then
-        echo "Ошибка: EFI раздел не смонтирован в $efi_mount_point"
+    # Проверка выполнения от root
+    if [[ $EUID -ne 0 ]]; then
+        echo "Ошибка: Скрипт должен запускаться с правами root" >&2
         return 1
     fi
 
-    # Установка необходимых пакетов
-    if ! pacman -Qs refind >/dev/null; then
-        echo "Установка rEFInd..."
-        pacman -Sy refind --noconfirm || return 1
+    # Пути монтирования
+    local efi_mount_point="/mnt/boot/efi"
+    local refind_dir="$efi_mount_point/EFI/refind"
+    
+    # Проверка монтирования EFI раздела
+    if ! mountpoint -q "$efi_mount_point"; then
+        echo "Ошибка: EFI раздел не смонтирован в $efi_mount_point" >&2
+        echo "Выполните: mount /dev/$boot $efi_mount_point" >&2
+        return 1
     fi
 
-    # Создание необходимых директорий
-    mkdir -p "${efi_mount_point}/EFI/refind/drivers" || return 1
+    # Установка пакетов в целевую систему
+    echo "Установка необходимых пакетов..."
+    if ! pacstrap /mnt refind efibootmgr dosfstools; then
+        echo "Ошибка установки пакетов!" >&2
+        return 1
+    fi
 
-    # Копирование драйверов файловых систем для обнаружения Windows
-    echo "Копирование драйверов NTFS..."
-    cp /usr/share/refind/drivers_x64/* "${efi_mount_point}/EFI/refind/drivers/" || return 1
+    # Создание структуры каталогов в целевом разделе
+    mkdir -p "$refind_dir/drivers" || {
+        echo "Ошибка создания директорий!" >&2
+        return 1
+    }
 
-    # Установка rEFInd в EFI раздел
+    # Копирование драйверов из целевой системы
+    echo "Копирование драйверов..."
+    drivers=("ext4" "ntfs" "btrfs" "xfs")
+    for driver in "${drivers[@]}"; do
+        driver_path="/usr/share/refind/drivers_x64/${driver}_x64.efi"
+        if ! arch-chroot /mnt [ -f "$driver_path" ]; then
+            echo "Ошибка: Драйвер $driver не найден в целевой системе!" >&2
+            return 1
+        fi
+        cp -f "/mnt$driver_path" "$refind_dir/drivers/" || return 1
+    done
+
+    # Установка rEFInd с учетом chroot окружения
     echo "Установка rEFInd в EFI раздел..."
-    refind-install \
+    if ! arch-chroot /mnt refind-install \
         --root /mnt \
         --alldrivers \
         --yes \
         --localkeys \
-        --keepname || return 1
+        --keepname; then
+        echo "Критическая ошибка при установке rEFInd!" >&2
+        return 1
+    fi
 
-    # Настройка конфигурации для двойной загрузки
-    local refind_conf="${efi_mount_point}/EFI/refind/refind.conf"
-    echo "Настройка конфигурации rEFInd..."
+    # Настройка конфигурации
+    local refind_conf="$refind_dir/refind.conf"
+    echo "Настройка refind.conf..."
+    sed -i 's/^#\(scan_all_linux_kernels\)/\1/' "$refind_conf"
+    sed -i 's/^#\(scan_for\)/\1 external,internal/' "$refind_conf"
     
-    # Включение сканирования всех дисков
-    sed -i 's/#\(scan_all_linux_kernels\)/\1/' "$refind_conf"
-    sed -i 's/#\(scan_for\)/\1/' "$refind_conf"
-    
-    # Добавление автоматического обнаружения Windows
-    if ! grep -q "Windows Boot Manager" "$refind_conf"; then
-        echo -e "\n# Автоопределение Windows" >> "$refind_conf"
-        echo 'menuentry "Windows" {' >> "$refind_conf"
+    # Добавление записи Windows
+    if ! grep -q "Microsoft" "$refind_conf"; then
+        echo -e "\n# Windows Boot Manager" >> "$refind_conf"
+        echo 'menuentry "Windows 11" {' >> "$refind_conf"
         echo '    icon /EFI/refind/icons/os_win.png' >> "$refind_conf"
         echo '    loader /EFI/Microsoft/Boot/bootmgfw.efi' >> "$refind_conf"
+        echo '    ostype Windows' >> "$refind_conf"
         echo '}' >> "$refind_conf"
     fi
 
-    # Удаление возможных конфликтов с systemd-boot
-    rm -f "${efi_mount_point}/EFI/systemd/systemd-bootx64.efi"
-    rm -f "${efi_mount_point}/EFI/BOOT/BOOTX64.EFI"
+    # Определение параметров диска
+    local disk_device="${boot%%[0-9]*}"
+    local part_number="${boot#$disk_device}"
 
-    # Обновление ядерных образов
-    if [ -d /mnt/boot ]; then
-        kernel-install add-all /mnt/boot/vmlinuz-linux /mnt/boot/initramfs-linux.img
-    fi
+    # Обновление UEFI записей
+    echo "Обновление UEFI переменных..."
+    efibootmgr -c -d "/dev/$disk_device" -p "$part_number" \
+        -L "rEFInd Boot Manager" \
+        -l '\EFI\refind\refind_x64.efi' >/dev/null 2>&1
 
-    echo "rEFInd успешно установлен!"
-    echo "Не забудьте проверить настройки Secure Boot в BIOS"
+    # Синхронизация файловых систем
+    sync
+
+    echo -e "\nУстановка rEFInd завершена успешно!"
+    echo "Проверьте:"
+    echo "1. Содержимое EFI раздела: ls $efi_mount_point/EFI"
+    echo "2. Записи UEFI: efibootmgr -v"
+    echo "3. Наличие файла: $refind_dir/refind_x64.efi"
 }
 
-# Пример вызова функции
-# Убедитесь, что EFI раздел смонтирован в /mnt/boot/efi перед выполнением
+# Пример вызова:
+# boot="nvme0n1p1"  # Укажите ваш раздел
 # install_refind
-
-
 
 ##############################################################################################
 #________________Выбор загрузчика_____________________________________
