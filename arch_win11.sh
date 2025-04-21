@@ -560,7 +560,7 @@ while true; do  # Добавляем цикл while для обработки п
     #---заглушка остановка для просмотра вывода комманд
     stop_   
     }
-    PS3="Выбирете :"
+    PS3="Выберите :"
     select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) grub_;break;;                    # Выходим из select и повторяем цикл while
@@ -669,12 +669,12 @@ install_refind_with_windows() {
 # Пример вызова функции
 # install_refind_with_windows "nvme0n1p1"
 ##############################################################################################
-
-PS3=" Выбирете :"
+#________________Выбор загрузчика_____________________________________
+PS3=" Выберите :"
     select choice in "Установка GRUB"  "установки rEFInd и настройки двойной загрузки" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) zagruzchik;break;;                    # Выходим из select 
-        2) install_refind_with_windows;break;;   # Выходим из select 
+        2) install_refind_with_windows $boot;break;;   # Выходим из select 
         3) arch-chroot /mnt;break;;         # Выходим из select 
         4) arch-chroot /mnt /bin/bash -c "exit";umount -R /mnt;reboot;break;;   # Выходим из select и повторяем цикл while
         5) return 0 ;;                      # Выходим из функции полностью
