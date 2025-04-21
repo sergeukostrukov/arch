@@ -668,16 +668,86 @@ install_refind_with_windows() {
 }
 # Пример вызова функции
 # install_refind_with_windows "nvme0n1p1"
+
+#=================================================================================================
+#_______________________install_refind_______________________________________
+install_refind() {
+    # Проверка наличия смонтированного EFI раздела
+    local efi_mount_point="/mnt/boot/efi"
+    if ! mount | grep -q "$efi_mount_point"; then
+        echo "Ошибка: EFI раздел не смонтирован в $efi_mount_point"
+        return 1
+    fi
+
+    # Установка необходимых пакетов
+    if ! pacman -Qs refind >/dev/null; then
+        echo "Установка rEFInd..."
+        pacman -Sy refind --noconfirm || return 1
+    fi
+
+    # Создание необходимых директорий
+    mkdir -p "${efi_mount_point}/EFI/refind/drivers" || return 1
+
+    # Копирование драйверов файловых систем для обнаружения Windows
+    echo "Копирование драйверов NTFS..."
+    cp /usr/share/refind/drivers_x64/* "${efi_mount_point}/EFI/refind/drivers/" || return 1
+
+    # Установка rEFInd в EFI раздел
+    echo "Установка rEFInd в EFI раздел..."
+    refind-install \
+        --root /mnt \
+        --alldrivers \
+        --yes \
+        --localkeys \
+        --keepname || return 1
+
+    # Настройка конфигурации для двойной загрузки
+    local refind_conf="${efi_mount_point}/EFI/refind/refind.conf"
+    echo "Настройка конфигурации rEFInd..."
+    
+    # Включение сканирования всех дисков
+    sed -i 's/#\(scan_all_linux_kernels\)/\1/' "$refind_conf"
+    sed -i 's/#\(scan_for\)/\1/' "$refind_conf"
+    
+    # Добавление автоматического обнаружения Windows
+    if ! grep -q "Windows Boot Manager" "$refind_conf"; then
+        echo -e "\n# Автоопределение Windows" >> "$refind_conf"
+        echo 'menuentry "Windows" {' >> "$refind_conf"
+        echo '    icon /EFI/refind/icons/os_win.png' >> "$refind_conf"
+        echo '    loader /EFI/Microsoft/Boot/bootmgfw.efi' >> "$refind_conf"
+        echo '}' >> "$refind_conf"
+    fi
+
+    # Удаление возможных конфликтов с systemd-boot
+    rm -f "${efi_mount_point}/EFI/systemd/systemd-bootx64.efi"
+    rm -f "${efi_mount_point}/EFI/BOOT/BOOTX64.EFI"
+
+    # Обновление ядерных образов
+    if [ -d /mnt/boot ]; then
+        kernel-install add-all /mnt/boot/vmlinuz-linux /mnt/boot/initramfs-linux.img
+    fi
+
+    echo "rEFInd успешно установлен!"
+    echo "Не забудьте проверить настройки Secure Boot в BIOS"
+}
+
+# Пример вызова функции
+# Убедитесь, что EFI раздел смонтирован в /mnt/boot/efi перед выполнением
+# install_refind
+
+
+
 ##############################################################################################
 #________________Выбор загрузчика_____________________________________
 PS3=" Выберите :"
-    select choice in "Установка GRUB"  "установки rEFInd и настройки двойной загрузки" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
+    select choice in "Установка GRUB"  "установки rEFInd и настройки двойной загрузки" "установка rEFInd однарная и двойная с виндовс" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) zagruzchik;break;;                    # Выходим из select 
         2) install_refind_with_windows $boot;break;;   # Выходим из select 
-        3) arch-chroot /mnt;break;;         # Выходим из select 
-        4) arch-chroot /mnt /bin/bash -c "exit";umount -R /mnt;reboot;break;;   # Выходим из select и повторяем цикл while
-        5) return 0 ;;                      # Выходим из функции полностью
+        3) install_refind;break;;
+        4) arch-chroot /mnt;break;;         # Выходим из select 
+        5) arch-chroot /mnt /bin/bash -c "exit";umount -R /mnt;reboot;break;;
+        6) exit;; 
         *) echo "Wrong choice!";;
         esac
     done
