@@ -674,68 +674,85 @@ install_refind_with_windows() {
 #!/bin/bash
 
 install_refind() {
-    # Проверка выполнения от root
+    # Проверка прав root
     if [[ $EUID -ne 0 ]]; then
-        echo "Ошибка: Скрипт должен запускаться с правами root" >&2
+        echo "❌ Ошибка: Скрипт должен запускаться с правами root" >&2
         return 1
     fi
 
-    # Пути монтирования
+    # Пути и переменные
     local efi_mount_point="/mnt/boot/efi"
     local refind_dir="$efi_mount_point/EFI/refind"
+    local refind_conf="$refind_dir/refind.conf"
     
-    # Проверка монтирования EFI раздела
+    # Проверка монтирования EFI
     if ! mountpoint -q "$efi_mount_point"; then
-        echo "Ошибка: EFI раздел не смонтирован в $efi_mount_point" >&2
+        echo "❌ Ошибка: EFI раздел не смонтирован в $efi_mount_point" >&2
         echo "Выполните: mount /dev/$boot $efi_mount_point" >&2
         return 1
     fi
 
-    # Установка пакетов в целевую систему
-    echo "Установка необходимых пакетов..."
-    if ! pacstrap /mnt refind efibootmgr dosfstools; then
-        echo "Ошибка установки пакетов!" >&2
+    # Установка необходимых пакетов
+    echo "⌛ Установка пакетов в целевую систему..."
+    if ! pacstrap /mnt refind efibootmgr dosfstools ntfs-3g; then
+        echo "❌ Ошибка установки пакетов!" >&2
         return 1
     fi
 
-    # Создание структуры каталогов в целевом разделе
+    # Создание структуры каталогов
+    echo "📂 Создание структуры директорий..."
     mkdir -p "$refind_dir/drivers" || {
-        echo "Ошибка создания директорий!" >&2
+        echo "❌ Ошибка создания директорий!" >&2
         return 1
     }
 
-    # Копирование драйверов из целевой системы
-    echo "Копирование драйверов..."
-    drivers=("ext4" "ntfs" "btrfs" "xfs")
-    for driver in "${drivers[@]}"; do
-        driver_path="/usr/share/refind/drivers_x64/${driver}_x64.efi"
-        if ! arch-chroot /mnt [ -f "$driver_path" ]; then
-            echo "Ошибка: Драйвер $driver не найден в целевой системе!" >&2
-            return 1
+    # Копирование драйверов файловых систем
+    echo "🔧 Копирование драйверов..."
+    declare -A drivers=(
+        ["ext4"]="/usr/share/refind/drivers_x64/ext4_x64.efi"
+        ["ntfs"]="/usr/share/refind/drivers_x64/ntfs_x64.efi"
+        ["btrfs"]="/usr/share/refind/drivers_x64/btrfs_x64.efi"
+    )
+
+    for driver in "${!drivers[@]}"; do
+        src_path="${drivers[$driver]}"
+        if [ -f "/mnt$src_path" ]; then
+            cp -f "/mnt$src_path" "$refind_dir/drivers/" || echo "⚠️ Не удалось скопировать $driver" >&2
+        else
+            echo "⚠️ Драйвер $driver не найден в пакете, пропускаем..." >&2
         fi
-        cp -f "/mnt$driver_path" "$refind_dir/drivers/" || return 1
     done
 
-    # Установка rEFInd с учетом chroot окружения
-    echo "Установка rEFInd в EFI раздел..."
+    # Ручная установка NTFS драйвера при необходимости
+    if [ ! -f "$refind_dir/drivers/ntfs_x64.efi" ]; then
+        echo "🔧 Установка NTFS драйвера из альтернативного источника..."
+        wget -qO /tmp/ntfs_x64.efi https://github.com/anthraxx/refind-ntfs/raw/master/ntfs_x64.efi
+        cp -f /tmp/ntfs_x64.efi "$refind_dir/drivers/ntfs_x64.efi"
+        rm -f /tmp/ntfs_x64.efi
+    fi
+
+    # Основная установка rEFInd
+    echo "🚀 Установка rEFInd..."
     if ! arch-chroot /mnt refind-install \
         --root /mnt \
         --alldrivers \
         --yes \
         --localkeys \
         --keepname; then
-        echo "Критическая ошибка при установке rEFInd!" >&2
+        echo "❌ Критическая ошибка при установке rEFInd!" >&2
         return 1
     fi
 
     # Настройка конфигурации
-    local refind_conf="$refind_dir/refind.conf"
-    echo "Настройка refind.conf..."
+    echo "⚙️ Настройка конфигурации..."
+    cp -f "$refind_conf" "${refind_conf}.bak"  # Резервная копия
+
+    # Включение сканирования
     sed -i 's/^#\(scan_all_linux_kernels\)/\1/' "$refind_conf"
     sed -i 's/^#\(scan_for\)/\1 external,internal/' "$refind_conf"
-    
+
     # Добавление записи Windows
-    if ! grep -q "Microsoft" "$refind_conf"; then
+    if ! grep -q "Windows Boot Manager" "$refind_conf"; then
         echo -e "\n# Windows Boot Manager" >> "$refind_conf"
         echo 'menuentry "Windows 11" {' >> "$refind_conf"
         echo '    icon /EFI/refind/icons/os_win.png' >> "$refind_conf"
@@ -744,28 +761,26 @@ install_refind() {
         echo '}' >> "$refind_conf"
     fi
 
-    # Определение параметров диска
-    local disk_device="${boot%%[0-9]*}"
-    local part_number="${boot#$disk_device}"
-
     # Обновление UEFI записей
-    echo "Обновление UEFI переменных..."
+    echo "🔄 Обновление UEFI переменных..."
+    local disk_device="${boot%%[0-9]*}"
+    local part_number="${boot//[^0-9]/}"
+    
     efibootmgr -c -d "/dev/$disk_device" -p "$part_number" \
         -L "rEFInd Boot Manager" \
         -l '\EFI\refind\refind_x64.efi' >/dev/null 2>&1
 
-    # Синхронизация файловых систем
+    # Финализация
     sync
-
-    echo -e "\nУстановка rEFInd завершена успешно!"
+    echo -e "\n✅ Установка успешно завершена!"
     echo "Проверьте:"
-    echo "1. Содержимое EFI раздела: ls $efi_mount_point/EFI"
-    echo "2. Записи UEFI: efibootmgr -v"
-    echo "3. Наличие файла: $refind_dir/refind_x64.efi"
+    echo "1. Записи UEFI: efibootmgr -v"
+    echo "2. Наличие файлов в $efi_mount_point/EFI"
+    echo "3. Конфигурацию: $refind_conf"
 }
 
-# Пример вызова:
-# boot="nvme0n1p1"  # Укажите ваш раздел
+# Пример использования:
+# export boot="nvme0n1p1"
 # install_refind
 
 ##############################################################################################
