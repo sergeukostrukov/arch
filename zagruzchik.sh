@@ -26,7 +26,7 @@ while true; do  # Добавляем цикл while для обработки п
     stop_   
     }
     PS3="searh WINDOWS :"
-    select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
+    select choice in "Установка GRUB"  "GRUB ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) grub_;break;;
         2) searhwin;break;;
