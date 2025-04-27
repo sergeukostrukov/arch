@@ -672,117 +672,57 @@ install_refind_with_windows() {
 
 #=================================================================================================
 #_______________________install_refind_______________________________________
-#!/bin/bash
 
 install_refind() {
-    # Проверка прав root
-    if [[ $EUID -ne 0 ]]; then
-        echo "❌ Ошибка: Скрипт должен запускаться с правами root" >&2
-        return 1
-    fi
-
-    # Пути и переменные
-    local efi_mount_point="/mnt/boot/efi"
-    local refind_dir="$efi_mount_point/EFI/refind"
-    local refind_conf="$refind_dir/refind.conf"
+    # Шаг 1. Переход в chroot-окружение
+    echo ">>> Переходим в chroot-окружение"
+    arch-chroot /mnt bash -c '
     
-    # Проверка монтирования EFI
-    if ! mountpoint -q "$efi_mount_point"; then
-        echo "❌ Ошибка: EFI раздел не смонтирован в $efi_mount_point" >&2
-        echo "Выполните: mount /dev/$boot $efi_mount_point" >&2
-        return 1
-    fi
+    # Шаг 2. Установка rEFInd и зависимостей
+    echo ">>> Устанавливаем пакеты: refind efibootmgr"
+    pacman -Sy --noconfirm refind efibootmgr || exit 1
 
-    # Установка необходимых пакетов
-    echo "⌛ Установка пакетов в целевую систему..."
-    if ! pacstrap /mnt refind efibootmgr dosfstools ntfs-3g; then
-        echo "❌ Ошибка установки пакетов!" >&2
-        return 1
-    fi
-
-    # Создание структуры каталогов
-    echo "📂 Создание структуры директорий..."
-    mkdir -p "$refind_dir/drivers" || {
-        echo "❌ Ошибка создания директорий!" >&2
-        return 1
+    # Шаг 3. Копирование файлов rEFInd в ESP
+    echo ">>> Устанавливаем rEFInd в ESP (/boot/efi)"
+    refind-install --root /mnt 2>/dev/null || { 
+        echo "!!! Ошибка refind-install. Копируем вручную...";
+        mkdir -p /boot/efi/EFI/refind;
+        cp -r /usr/share/refind/{refind_x64.efi,drivers_x64,icons,fonts} /boot/efi/EFI/refind/;
+        cp /usr/share/refind/refind.conf-sample /boot/efi/EFI/refind/refind.conf;
     }
 
-    # Копирование драйверов файловых систем
-    echo "🔧 Копирование драйверов..."
-    declare -A drivers=(
-        ["ext4"]="/usr/share/refind/drivers_x64/ext4_x64.efi"
-        ["ntfs"]="/usr/share/refind/drivers_x64/ntfs_x64.efi"
-        ["btrfs"]="/usr/share/refind/drivers_x64/btrfs_x64.efi"
-    )
-
-    for driver in "${!drivers[@]}"; do
-        src_path="${drivers[$driver]}"
-        if [ -f "/mnt$src_path" ]; then
-            cp -f "/mnt$src_path" "$refind_dir/drivers/" || echo "⚠️ Не удалось скопировать $driver" >&2
-        else
-            echo "⚠️ Драйвер $driver не найден в пакете, пропускаем..." >&2
-        fi
-    done
-
-    # Ручная установка NTFS драйвера при необходимости
-    if [ ! -f "$refind_dir/drivers/ntfs_x64.efi" ]; then
-        echo "🔧 Установка NTFS драйвера из альтернативного источника..."
-        wget -qO /tmp/ntfs_x64.efi https://github.com/anthraxx/refind-ntfs/raw/master/ntfs_x64.efi
-        cp -f /tmp/ntfs_x64.efi "$refind_dir/drivers/ntfs_x64.efi"
-        rm -f /tmp/ntfs_x64.efi
+    # Шаг 4. Настройка конфигурации rEFInd
+    echo ">>> Настраиваем refind.conf"
+    CONFIG_FILE="/boot/efi/EFI/refind/refind.conf"
+    # Включаем сканирование всех ядер
+    sed -i "s/#scan_all_linux_kernels false/scan_all_linux_kernels true/g" "$CONFIG_FILE"
+    # Добавляем запись для Windows
+    if ! grep -q "Windows Boot Manager" "$CONFIG_FILE"; then
+        echo -e "\n# Загрузчик Windows
+menuentry \"Windows 11\" {
+    loader /EFI/Microsoft/Boot/bootmgfw.efi
+    icon /EFI/refind/icons/os_win.png
+}" >> "$CONFIG_FILE"
     fi
 
-    # Основная установка rEFInd
-    echo "🚀 Установка rEFInd..."
-    if ! arch-chroot /mnt refind-install \
-        --root /mnt \
-        --alldrivers \
-        --yes \
-        --localkeys \
-        --keepname; then
-        echo "❌ Критическая ошибка при установке rEFInd!" >&2
-        return 1
+    # Шаг 5. Создание UEFI-записи
+    echo ">>> Создаем UEFI-запись для rEFInd"
+    efibootmgr -c -d /dev/$boot -p 1 -L "rEFInd" -l "\\EFI\\refind\\refind_x64.efi" || exit 1
+
+    # Шаг 6. Проверка наличия Windows
+    echo ">>> Проверяем наличие загрузчика Windows"
+    if [[ ! -f /boot/efi/EFI/Microsoft/Boot/bootmgfw.efi ]]; then
+        echo "!!! Внимание: Файл bootmgfw.efi не найден! Проверьте ESP."
     fi
 
-    # Настройка конфигурации
-    echo "⚙️ Настройка конфигурации..."
-    cp -f "$refind_conf" "${refind_conf}.bak"  # Резервная копия
+    # Шаг 7. Пересборка initramfs (опционально)
+    echo ">>> Пересобираем initramfs"
+    mkinitcpio -P
 
-    # Включение сканирования
-    sed -i 's/^#\(scan_all_linux_kernels\)/\1/' "$refind_conf"
-    sed -i 's/^#\(scan_for\)/\1 external,internal/' "$refind_conf"
-
-    # Добавление записи Windows
-    if ! grep -q "Windows Boot Manager" "$refind_conf"; then
-        echo -e "\n# Windows Boot Manager" >> "$refind_conf"
-        echo 'menuentry "Windows 11" {' >> "$refind_conf"
-        echo '    icon /EFI/refind/icons/os_win.png' >> "$refind_conf"
-        echo '    loader /EFI/Microsoft/Boot/bootmgfw.efi' >> "$refind_conf"
-        echo '    ostype Windows' >> "$refind_conf"
-        echo '}' >> "$refind_conf"
-    fi
-
-    # Обновление UEFI записей
-    echo "🔄 Обновление UEFI переменных..."
-    local disk_device="${boot%%[0-9]*}"
-    local part_number="${boot//[^0-9]/}"
-    
-    efibootmgr -c -d "/dev/$disk_device" -p "$part_number" \
-        -L "rEFInd Boot Manager" \
-        -l '\EFI\refind\refind_x64.efi' >/dev/null 2>&1
-
-    # Финализация
-    sync
-    echo -e "\n✅ Установка успешно завершена!"
-    echo "Проверьте:"
-    echo "1. Записи UEFI: efibootmgr -v"
-    echo "2. Наличие файлов в $efi_mount_point/EFI"
-    echo "3. Конфигурацию: $refind_conf"
+    echo ">>> Установка rEFInd завершена!"
+    '
 }
-
-# Пример использования:
-# export boot="nvme0n1p1"
-# install_refind
+ 
 
 ##############################################################################################
 #________________Выбор загрузчика_____________________________________
