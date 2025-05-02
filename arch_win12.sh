@@ -35,7 +35,7 @@ iwctl station $namelan get-networks
 read -p '                                    -> Введите название вашей сети из списка  : ' namewifi
 iwctl station $namelan connect $namewifi
 iwctl station $namelan show
-sleep 5
+#stop_
  }
 #-------------------------------------------------------
 #clear
@@ -65,7 +65,7 @@ echo '
 
 
                 Есть подключение !!!!!!!!'
-sleep 2
+sleep 1
 #################################################################
 #################################################################
 #-----назначение переменных----------
@@ -90,7 +90,7 @@ read -p "
 
 echo '         Вы выьрали диск = '$namedisk
 
-sleep 5
+sleep 1
 
 ############################################################################
 #----------------Настройка пользователей-----------------------------------
@@ -371,7 +371,7 @@ fdisk -l /dev/$namedisk
 echo '
 
 
-ВЫБЕРИТЕ ПАРТИЦИЮ  !!!<< '$namedisk '>>!!! boot И root'
+ВЫБЕРИТЕ ПАРТИЦИЮ НА ДИСКЕ << '$namedisk' >> ДЛЯ  boot И root'
 read -p "
 
 POLNOE NAZBANIE PARTICII (sda1...nvme0n1p1....) boot: ->:" boot
@@ -383,8 +383,8 @@ POLNOE NAZBANIE PARTICII (sdb2...nvme0n1p2....) root: ->:" root
 echo '                Вы выьрали Disk = '$namedisk
 echo '                           boot = '$boot
 echo '                           root = '$root
-sleep 3
-
+#sleep 3
+stop_
 ############################################################################################
 
 clear
@@ -727,12 +727,12 @@ menuentry \"Windows 11\" {
 ##############################################################################################
 #________________Выбор загрузчика_____________________________________
 PS3=" Выберите :"
-    select choice in "Установка GRUB"  "установки rEFInd и настройки двойной загрузки" "установка rEFInd однарная и двойная с виндовс" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
+    select choice in "Установка GRUB РЕКОМЕНДОВАН"  "установки rEFInd и настройки двойной загрузки" "установка rEFInd однарная и двойная с виндовс" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
-        1) zagruzchik;break;;                    # Выходим из select 
-        2) install_refind_with_windows $boot;break;;   # Выходим из select 
+        1) zagruzchik;break;;                   
+        2) install_refind_with_windows $boot;break;;
         3) install_refind $boot;break;;
-        4) arch-chroot /mnt;break;;         # Выходим из select 
+        4) arch-chroot /mnt;break;;
         5) arch-chroot /mnt /bin/bash -c "exit";umount -R /mnt;reboot;break;;
         6) exit;; 
         *) echo "Wrong choice!";;
