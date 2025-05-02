@@ -77,9 +77,9 @@ select_partitions() {
     root_part=$(choose_partition "  Раздел для /root")
 
 
-    root="${root_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+    root="${root_part[$((choose_partition))]##*/}" # <-- Изменено здесь: удаляет - /dev/
     export root
-    boot="${boot_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+    boot="${boot_part[$((choose_partition))]##*/}" # <-- Изменено здесь: удаляет - /dev/
     export boot
 
 
