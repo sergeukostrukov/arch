@@ -8,7 +8,9 @@
 #  $boot_part для  EFI System      13.04.25 19:05
 #  $root_part для  ROOT
 #
-#  На выходе формат вида  /dev/sda1   /dev/sda2 !!!!
+#  На выходе формат вида root_part => /dev/sda1
+#  boot_part =>     /dev/sda2 !!!!
+#  на выходе добавлено boot =>sda1; root=> sds2
 #
 #  эти переменные передаются дальше другим функциям в скриптах
 #-------------------------------------------------
@@ -74,6 +76,15 @@ select_partitions() {
     boot_part=$(choose_partition "  Раздел для /boot")
     root_part=$(choose_partition "  Раздел для /root")
 
+
+    root="${root_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+    export root
+    boot="${boot_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+    export boot
+
+
+
+
     if [[ "$root_part" == "skip" ]]; then
         echo "Ошибка: Выберите раздел для корневой системы (/root)!"
         exit 1
@@ -87,3 +98,5 @@ select_partitions "$DISK"
 echo "────────────────────────"
 [[ "$boot_part" != "skip" ]] && echo "Boot: $boot_part"
 echo "Root: $root_part"
+echo "boot=>$boot"
+echo "root=>$root"

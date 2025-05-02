@@ -88,10 +88,6 @@ select_partitions() {
         exit 1
     fi
 
-root="${root_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
-export root
-boot="${boot_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
-export boot
 }
 
 # Пример использования:
@@ -105,5 +101,3 @@ select_partitions "$DISK"
 echo "────────────────────────"
 [[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
 echo "Root раздел: $root_part" [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
-echo "boot=>$boot"
-echo "root=>$root"
