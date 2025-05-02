@@ -2,10 +2,10 @@
 #--------------------------------------------------
 #  Функция для выбора разделов на указанном диске
 #  Входные данные диск с которым работать - $DISK
-#  На выходе назначенные партиции 
+#  На входе назначенные партиции 
 #  DISK="/dev/sda"  !!!!!!!!(/dev/..)
-#  $boot_part для  EFI System
-#  $root_part для  ROOT
+#  $boot_part для  EFI System   !!!!/dev/....
+#  $root_part для  ROOT         !!!!/dev/....
 #  эти переменные передаются дальше другим функциям в скриптах
 #-------------------------------------------------
 select_partitions() {
@@ -87,6 +87,11 @@ select_partitions() {
         echo "Ошибка: Необходимо выбрать раздел для корневой файловой системы!"
         exit 1
     fi
+
+root="${root_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+export root
+boot="${boot_part[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
+export boot
 }
 
 # Пример использования:
@@ -100,3 +105,5 @@ select_partitions "$DISK"
 echo "────────────────────────"
 [[ "$boot_part" != "skip" ]] && echo "Boot раздел: $boot_part"
 echo "Root раздел: $root_part" [[ "$home_part" != "skip" ]] && echo "Home раздел: $home_part"
+echo "boot=>$boot"
+echo "root=>$root"

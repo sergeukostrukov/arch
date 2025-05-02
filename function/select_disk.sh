@@ -52,7 +52,7 @@ select_disk() {
         # Проверка корректности ввода
         if [[ "$choice" =~ ^[0-9]+$ ]] && 
            (( choice >= 1 && choice <= ${#device_list[@]} )); then
-            DISK="${device_list[$((choice-1))]##*/}" # <-- Изменено здесь
+            DISK="${device_list[$((choice-1))]##*/}" # <-- Изменено здесь: удаляет - /dev/
             export DISK  # <-- Добавьте эту строку для передачи в другие скрипты
             return 0
         else
@@ -61,3 +61,6 @@ select_disk() {
     done
 }
 
+select_disk
+echo "device_list =>"$device_list
+echo "DISK=>"$DISK
