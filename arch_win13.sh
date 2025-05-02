@@ -48,7 +48,7 @@ echo '
             
                  
 '
-PS3="Выберите тип соединения 1 или 2  если 3 - не настраивать  4 - Прервать установку :"
+PS3="╰─ Выберите режим работы: :"
 select choice in "WiFi" "Lan" "ПРОПУСТИТЬ" "Прервать установку exit"; do
 case $REPLY in
     1) mywifi;break;;
@@ -229,7 +229,7 @@ read -p "
 ####-------------показываем tablo2------------------
 tablo2
 
-PS3="Выберите действие :"
+PS3="╰─ Выберите  действие :"
 echo
 select choice in "ПРОДОЛЖИТЬ" "Изменить- регион, miror репозитория, name имя компьютера " "Выйти из установки EXIT"; do
 case $REPLY in
@@ -244,7 +244,7 @@ clear
 #__Функция подготовки BOOT партиции
 mkboot() {
     clear
-PS3="1 Не удалять загрузчик WINDOWS !!! 2 Если один линукс  :"
+PS3="╰─ Выберите   :"
 select choice in "Если загрузчик ставится в EFI- Windows!" "LINUX свой раздел  BOOT" "Выйти из установки EXIT"; do
 case $REPLY in
     1) break;;
@@ -352,6 +352,9 @@ clear
 echo '
 
 
+
+
+
 На диске должен быть тип GPT и создано минимум два раздела
  ->  boot  (512М если одно ядро) тип EFI System
  ->  root (остальное  пространство) тип  Linux filesystem
@@ -392,7 +395,7 @@ disk_part(){
             ) | fdisk /dev/$namedisk
         }
 
-        PS3="Выберите действие: "
+        PS3="╰─ Выберите действие: "
         select choice in "512М-boot остальное-root все данные удаляются" "Очистить диск" "Ручная разметка. Можно оставить разделы WINDOWS!!!!!" "ДАЛЬШЕ (Оставить с этими разделами)" "Завершить установку EXIT"; do
             case $REPLY in
                 1) 
@@ -541,7 +544,7 @@ echo '
       /@swap   swapfile 8g               создать SWAP на ZRAM
 
 '
-PS3="Выбирете действие :"
+PS3="╰─ Выберите  действие :"
 select choice in "Вариант с физическим swapfile"  "Вариант с возможностью создать виртуальный VIRTUAL ZRAM-SWAP" "EXIT"; do
 case $REPLY in
     1) mkboot;btrfs1;break;;
@@ -557,7 +560,7 @@ clear
 
 kernel1='pacstrap -i /mnt base base-devel linux-zen linux-zen-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw terminus-font --noconfirm'
 kernel2='pacstrap -i /mnt base base-devel linux linux-headers linux-firmware ntfs-3g btrfs-progs amd-ucode intel-ucode iucode-tool archlinux-keyring nano mc vim dhcpcd dhclient networkmanager wpa_supplicant iw terminus-font --noconfirm'
-PS3="Выбирете действие :"
+PS3="╰─ Выберите  действие :"
 select choice in "Linux-zen"  "Linux" "EXIT"; do
 case $REPLY in
     1) kernel=${kernel1};break;;
@@ -658,7 +661,7 @@ echo '
 
 
 '
-PS3="Выберите действие :"
+PS3="╰─ Выберите действие :"
 select choice in "Подключить  ZRAM" " ДАЛЬШЕ"; do
 case $REPLY in
     1) zram_;break;;
@@ -699,7 +702,7 @@ while true; do  # Добавляем цикл while для обработки п
     #---заглушка остановка для просмотра вывода комманд
     stop_   
     }
-    PS3="Выберите :"
+    PS3="╰─ Выберите  :"
     select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) grub_;break;;                    # Выходим из select и повторяем цикл while
@@ -719,7 +722,7 @@ done
 ##############################################################################################
 #________________Выбор загрузчика_____________________________________
 clear
-PS3=" Выберите :"
+PS3="╰─ Выберите  :"
     select choice in "Установка GRUB" "2" "3" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT"; do
         case $REPLY in
         1) zagruzchik;break;;                   
