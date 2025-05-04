@@ -43,7 +43,7 @@ echo '
 
 
 
-		        	ПОДКЛЮЧЕНИЕ  ENTERNET CONNECT 
+		        	ПОДКЛЮЧЕНИЕ  INTERNET CONNECT
 
             
                  
@@ -509,7 +509,7 @@ select_partitions() {
     fi
 }
 
-# Ввызов функции выбора партиций
+# Вызов функции выбора партиций
 clear
 select_partitions "$namedisk"
 
@@ -532,7 +532,7 @@ clear
 echo '
 
   ДИСК БУДЕТ РАЗМЕЧЕН В BTRFS
-  Выбирете вариант разметки субволумов :
+  Выберите вариант разметки субволумов :
 
   Вариант с swapfile                    Вариант без NOT SWAPfile
       /@                                      /@
@@ -570,7 +570,7 @@ case $REPLY in
 esac
 done
 
-#--------------------end-выбор ядоа-----------------------------------------------------
+#--------------------end-выбор ядра-----------------------------------------------------
 #Uefi="grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=$name --no-nvram --removable /dev/$namedisk"
 Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --removable /dev/$namedisk"
 #Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB"
@@ -687,7 +687,7 @@ while true; do  # Добавляем цикл while для обработки п
     Uefi="grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --no-nvram --removable /dev/$namedisk"
     arch-chroot /mnt /bin/bash -c "${Uefi}"
     arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
-    #---заглушка остановка для просмотра вывода комманд
+    #---заглушка остановка для просмотра вывода команд
     stop_
     #--------------------------------------------------------------------
     }
@@ -699,11 +699,11 @@ while true; do  # Добавляем цикл while для обработки п
     arch-chroot /mnt /bin/bash -c "sed -i s/'GRUB_TIMEOUT=5'/'GRUB_TIMEOUT=30'/g /etc/default/grub"
     arch-chroot /mnt /bin/bash -c "sed -i s/'#GRUB_DISABLE_OS_PROBER=false'/'GRUB_DISABLE_OS_PROBER=false'/g /etc/default/grub"
     arch-chroot /mnt /bin/bash -c "grub-mkconfig -o /boot/grub/grub.cfg"
-    #---заглушка остановка для просмотра вывода комманд
+    #---заглушка остановка для просмотра вывода команд
     stop_   
     }
     PS3="└─ Выберите  :"
-    select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
+    select choice in "Установка GRUB"  "ПОИСК WINDOWS" "Командная строка- arch-chroot" "GAME OVER REBOOT" "EXIT из меню"; do
         case $REPLY in
         1) grub_;break;;                    # Выходим из select и повторяем цикл while
         2) searhwin;break;;                 # Выходим из select и повторяем цикл while
@@ -723,7 +723,7 @@ done
 #________________Выбор загрузчика_____________________________________
 clear
 PS3="└─ Выберите  :"
-    select choice in "Установка GRUB" "2" "3" "Коммандная строка- arch-chroot" "GAME OVER REBOOT" "EXIT"; do
+    select choice in "Установка GRUB" "2" "3" "Командная строка- arch-chroot" "GAME OVER REBOOT" "EXIT"; do
         case $REPLY in
         1) zagruzchik;break;;                   
         2) echo "(в режиме разработки)";;
