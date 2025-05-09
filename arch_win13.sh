@@ -534,7 +534,7 @@ echo '
   ДИСК БУДЕТ РАЗМЕЧЕН В BTRFS
   Выберите вариант разметки субволумов :
 
-  Вариант с swapfile                    Вариант без NOT SWAPfile
+  Вариант с swapfile                    Вариант без SWAPfile
       /@                                      /@
       /@home                                  /@home
       /@log                                   /@log       var/log
